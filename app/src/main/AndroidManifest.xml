@@ -1,0 +1,47 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          package="ca.uwaterloo.sh6choi.czshopper">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application android:allowBackup="true"
+                 android:label="@string/app_name"
+                 android:icon="@mipmap/ic_launcher"
+                 android:theme="@style/AppTheme">
+
+        <activity
+            android:name=".activities.MainActivity"
+            android:configChanges="orientation|screenSize"
+            android:launchMode="singleTop"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize|stateAlwaysHidden" >
+
+            <intent-filter>
+                <category android:name="android.intent.category.LAUNCHER" />
+                <action android:name="android.intent.action.MAIN" />
+            </intent-filter>
+
+        </activity>
+
+        <service
+            android:name=".services.FetchItemWebIntentService"
+            android:exported="false"
+            android:stopWithTask="true"/>
+
+        <service
+            android:name=".services.AddItemWebIntentService"
+            android:exported="false"
+            android:stopWithTask="true"/>
+
+        <service
+            android:name=".services.UpdateItemWebIntentService"
+            android:exported="false"
+            android:stopWithTask="true"/>
+
+        <service
+            android:name=".services.DeleteItemWebIntentService"
+            android:exported="false"
+            android:stopWithTask="true"/>
+
+    </application>
+
+</manifest>

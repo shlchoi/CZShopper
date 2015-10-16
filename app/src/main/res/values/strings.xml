@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">CZShopper</string>
+
+    <string name="url">http://czshopper.herokuapp.com</string>
+    <string name="endpoint_fetch_items">/items.json</string>
+    <string name="endpoint_add_item">/items.json</string>
+    <string name="endpoint_update_item">/items/%d.json</string>
+    <string name="endpoint_delete_item">/items/%d.json</string>
+
+    <string name="label_item_name">Name</string>
+    <string name="label_item_category">Category</string>
+
+    <string name="dialog_add_edit_cancel">Cancel</string>
+    <string name="dialog_add_edit_save">Save</string>
+</resources>

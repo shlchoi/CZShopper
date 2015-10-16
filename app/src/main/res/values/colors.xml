@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorHighlight">#2c335f</color>
+
+    <color name="swipeRefreshOne">@color/colorHighlight</color>
+    <color name="swipeRefreshTwo">#7dc3e6</color>
+    <color name="swipeRefreshThree">#e7986d</color>
+    <color name="swipeRefreshFour">#f0c6ac</color>
+
+    <color name="transparent60">#88000000</color>
+</resources>
