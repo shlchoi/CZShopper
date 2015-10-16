@@ -1,5 +1,6 @@
 package ca.uwaterloo.sh6choi.czshopper.services;
 
+import android.content.Intent;
 import android.util.Log;
 
 import com.google.gson.Gson;
@@ -13,6 +14,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 import ca.uwaterloo.sh6choi.czshopper.R;
+import ca.uwaterloo.sh6choi.czshopper.database.ItemDataSource;
 import ca.uwaterloo.sh6choi.czshopper.model.Item;
 
 /**
@@ -20,6 +22,11 @@ import ca.uwaterloo.sh6choi.czshopper.model.Item;
  */
 public class AddItemWebIntentService extends WebIntentService {
     private static final String TAG = AddItemWebIntentService.class.getCanonicalName();
+
+    public static final String EXTRA_ITEM = TAG  + ".extras.item";
+    public static final String ACTION_ITEM_ADDED = TAG + ".action.item_added";
+
+    private Item mItem;
 
     public AddItemWebIntentService() {
         super("AddItemWebIntentService");
@@ -37,7 +44,7 @@ public class AddItemWebIntentService extends WebIntentService {
 
     @Override
     public String getRequestString() {
-        return new Item("Meat", "Beef").getJsonString();
+        return mItem.getJsonString();
     }
 
     @Override
@@ -45,7 +52,26 @@ public class AddItemWebIntentService extends WebIntentService {
         Log.d(TAG, "Response retrieved");
         JsonObject jsonObject = new JsonParser().parse(response).getAsJsonObject();
         Item item = new Gson().fromJson(jsonObject, Item.class);
+
+        ItemDataSource dataSource = new ItemDataSource(this);
+        dataSource.open();
+        dataSource.addItem(item);
+        dataSource.close();
+
+        sendBroadcast(new Intent(ACTION_ITEM_ADDED));
+
         Log.d(TAG, "Item parsed");
+    }
+
+    @Override
+    protected void onHandleIntent(Intent intent) {
+        mItem = intent.getParcelableExtra(EXTRA_ITEM);
+
+        if (mItem != null) {
+            super.onHandleIntent(intent);
+        } else {
+            onError(new NullPointerException("No item provided"));
+        }
     }
 
     @Override

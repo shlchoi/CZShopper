@@ -3,10 +3,9 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_marginLeft="16dp"
     android:layout_marginRight="16dp"
-    android:layout_marginTop="64dp"
-    android:layout_marginBottom="64dp"
     >
 
     <LinearLayout
@@ -15,17 +14,35 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <EditText
-            android:id="@+id/add_edit_item_name_edittext"
+        <ca.uwaterloo.sh6choi.czshopper.ui.FloatLabelLayout
+            android:id="@+id/add_edit_name_float_label"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="@string/label_item_name"/>
+            app:floatLabelTextAppearance="@style/FloatLabel">
 
-        <EditText
-            android:id="@+id/add_edit_item_category_edittext"
+            <EditText
+                android:id="@+id/add_edit_item_name_edittext"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/textColorSecondary"
+                android:hint="@string/label_item_name"/>
+
+        </ca.uwaterloo.sh6choi.czshopper.ui.FloatLabelLayout>
+
+        <ca.uwaterloo.sh6choi.czshopper.ui.FloatLabelLayout
+            android:id="@+id/add_edit_category_float_label"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="@string/label_item_category"/>
+            app:floatLabelTextAppearance="@style/FloatLabel">
+
+            <EditText
+                android:id="@+id/add_edit_item_category_edittext"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/textColorSecondary"
+                android:hint="@string/label_item_category"/>
+
+        </ca.uwaterloo.sh6choi.czshopper.ui.FloatLabelLayout>
 
         <LinearLayout
             android:layout_width="match_parent"

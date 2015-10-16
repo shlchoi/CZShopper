@@ -1,5 +1,6 @@
 package ca.uwaterloo.sh6choi.czshopper.services;
 
+import android.content.Intent;
 import android.util.Log;
 
 import com.google.gson.Gson;
@@ -10,6 +11,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 import ca.uwaterloo.sh6choi.czshopper.R;
+import ca.uwaterloo.sh6choi.czshopper.database.ItemDataSource;
 import ca.uwaterloo.sh6choi.czshopper.model.Item;
 
 /**
@@ -18,13 +20,18 @@ import ca.uwaterloo.sh6choi.czshopper.model.Item;
 public class UpdateItemWebIntentService extends WebIntentService {
     private static final String TAG = UpdateItemWebIntentService.class.getCanonicalName();
 
+    public static final String EXTRA_ITEM = TAG  + ".extras.item";
+    public static final String ACTION_ITEM_UPDATED = TAG + ".action.item_updated";
+
+    private Item mItem;
+
     public UpdateItemWebIntentService() {
         super("UpdateItemWebIntentService");
     }
 
     @Override
     protected URL getUrl() throws MalformedURLException {
-        return new URL(getString(R.string.url) + String.format(getString(R.string.endpoint_update_item), 1084));
+        return new URL(getString(R.string.url) + String.format(getString(R.string.endpoint_update_item), mItem.getId()));
     }
 
     @Override
@@ -34,7 +41,18 @@ public class UpdateItemWebIntentService extends WebIntentService {
 
     @Override
     public String getRequestString() {
-        return new Item("Meat", "Pork").getJsonString();
+        return mItem.getJsonString();
+    }
+
+    @Override
+    protected void onHandleIntent(Intent intent) {
+        mItem = intent.getParcelableExtra(EXTRA_ITEM);
+
+        if (mItem != null) {
+            super.onHandleIntent(intent);
+        } else {
+            onError(new NullPointerException("No item provided"));
+        }
     }
 
     @Override
@@ -42,6 +60,13 @@ public class UpdateItemWebIntentService extends WebIntentService {
         Log.d(TAG, "Response retrieved");
         JsonObject jsonObject = new JsonParser().parse(response).getAsJsonObject();
         Item item = new Gson().fromJson(jsonObject, Item.class);
+
+        ItemDataSource dataSource = new ItemDataSource(this);
+        dataSource.open();
+        dataSource.updateItem(item);
+        dataSource.close();
+
+        sendBroadcast(new Intent(ACTION_ITEM_UPDATED));
         Log.d(TAG, "Item parsed");
     }
 

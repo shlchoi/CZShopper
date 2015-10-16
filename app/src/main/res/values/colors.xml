@@ -1,8 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorHighlight">#2c335f</color>
 
-    <color name="swipeRefreshOne">@color/colorHighlight</color>
+    <color name="colorPrimary">#2c335f</color>
+    <color name="colorPrimaryDark">#2c335f</color>
+    <color name="windowBackground">@android:color/white</color>
+    <color name="textColorPrimary">@android:color/white</color>
+    <color name="textColorSecondary">#555555</color>
+    <color name="colorAccent">#2c335f</color>
+
+    <color name="swipeRefreshOne">@color/colorAccent</color>
     <color name="swipeRefreshTwo">#7dc3e6</color>
     <color name="swipeRefreshThree">#e7986d</color>
     <color name="swipeRefreshFour">#f0c6ac</color>

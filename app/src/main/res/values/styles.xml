@@ -3,6 +3,34 @@
     <!-- Base application theme. -->
     <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
         <!-- Customize your theme here. -->
+        <item name="android:windowBackground">@color/windowBackground</item>
+        <item name="android:colorBackground">@color/colorPrimary</item>
+        <item name="android:textColorPrimary">@color/textColorPrimary</item>
+        <item name="android:textColorSecondary">@color/textColorSecondary</item>
+        <item name="android:textColor">@color/textColorSecondary</item>
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+
+        <item name="android:actionBarStyle">@style/ActionBar</item>
+
+        <item name="actionBarStyle">@style/ActionBar</item>
     </style>
 
+    <style name="FloatLabel" parent="android:TextAppearance.Small">
+        <item name="android:textColor">@color/textColorSecondary</item>
+        <item name="android:textSize">12sp</item>
+    </style>
+
+    <style name="ActionBar" parent="@style/Widget.AppCompat.Light.ActionBar.Solid.Inverse">
+        <item name="android:background">@color/colorAccent</item>
+        <item name="android:titleTextStyle">@style/ActionBarTitleText</item>
+
+        <item name="background">@color/colorAccent</item>
+        <item name="titleTextStyle">@style/ActionBarTitleText</item>
+    </style>
+
+    <style name="ActionBarTitleText" parent="@style/TextAppearance.AppCompat.Widget.ActionBar.Title">
+        <item name="android:textColor">@android:color/white</item>
+    </style>
 </resources>

@@ -12,6 +12,7 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.helper.ItemTouchHelper;
 import android.support.design.widget.FloatingActionButton;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -32,13 +33,14 @@ import ca.uwaterloo.sh6choi.czshopper.bus.BusProvider;
 import ca.uwaterloo.sh6choi.czshopper.database.ItemDataSource;
 import ca.uwaterloo.sh6choi.czshopper.events.ItemsFetchedEvent;
 import ca.uwaterloo.sh6choi.czshopper.model.Item;
+import ca.uwaterloo.sh6choi.czshopper.services.AddItemWebIntentService;
 import ca.uwaterloo.sh6choi.czshopper.services.DeleteItemWebIntentService;
 import ca.uwaterloo.sh6choi.czshopper.services.FetchItemWebIntentService;
 
 /**
  * Created by Samson on 2015-10-15.
  */
-public class ItemListFragment extends Fragment implements DrawerFragment, SwipeRefreshLayout.OnRefreshListener {
+public class ItemListFragment extends Fragment implements DrawerFragment, SwipeRefreshLayout.OnRefreshListener, View.OnClickListener {
 
     private static final String TAG = ItemListFragment.class.getCanonicalName();
     public static final String FRAGMENT_TAG = MainActivity.TAG + ".fragment.item_list";
@@ -55,7 +57,7 @@ public class ItemListFragment extends Fragment implements DrawerFragment, SwipeR
     private Button mAddEditSave;
     private Button mAddEditCancel;
 
-    private FloatingActionButton mAddFab;
+    private FloatingActionButton mAddItemFab;
 
     private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
         @Override
@@ -132,6 +134,12 @@ public class ItemListFragment extends Fragment implements DrawerFragment, SwipeR
         mAddEditSave = (Button) view.findViewById(R.id.add_edit_save_button);
         mAddEditCancel = (Button) view.findViewById(R.id.add_edit_cancel_button);
 
+        mAddItemFab = (FloatingActionButton) view.findViewById(R.id.add_item_fab);
+
+        mAddEditSave.setOnClickListener(this);
+        mAddEditCancel.setOnClickListener(this);
+        mAddItemFab.setOnClickListener(this);
+
         mSwipeRefreshLayout.setRefreshing(true);
     }
 
@@ -150,19 +158,88 @@ public class ItemListFragment extends Fragment implements DrawerFragment, SwipeR
     }
 
     @Override
+    public void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.add_item_fab:
+                onAddItemFabClicked();
+                break;
+            case R.id.add_edit_save_button:
+                onAddEditSaveClicked();
+                break;
+            case R.id.add_edit_cancel_button:
+                onAddEditCancelClicked();
+                break;
+        }
+    }
+
+    private void onAddItemFabClicked() {
+        showAddEditDialog();
+    }
+
+    private void onAddEditSaveClicked() {
+        if (TextUtils.isEmpty(mAddEditNameEditText.getText())) {
+            mAddEditNameEditText.setError("Please enter a name.");
+        } else {
+            mAddEditNameEditText.setError(null);
+        }
+
+        if (TextUtils.isEmpty(mAddEditCategoryEditText.getText())) {
+            mAddEditCategoryEditText.setError("Please enter a category.");
+        } else {
+            mAddEditCategoryEditText.setError(null);
+        }
+
+        String name = mAddEditNameEditText.getText().toString();
+        String category = mAddEditCategoryEditText.getText().toString();
+
+        Item newItem = new Item(category, name);
+
+        Intent intent = new Intent(getContext(), AddItemWebIntentService.class);
+        intent.putExtra(AddItemWebIntentService.EXTRA_ITEM, newItem);
+        getContext().startService(intent);
+
+        //TODO: SHOW MOCK
+
+        hideAddEditDialog();
+    }
+
+    private void onAddEditCancelClicked() {
+        hideAddEditDialog();
+    }
+
+    private void clearFields() {
+        mAddEditNameEditText.setText("");
+        mAddEditCategoryEditText.setText("");
+
+        mAddEditNameEditText.setError(null);
+        mAddEditCategoryEditText.setError(null);
+    }
+
+    private void showAddEditDialog() {
+        mAddEditLinearLayout.setVisibility(View.VISIBLE);
+        mAddItemFab.setVisibility(View.GONE);
+    }
+
+    private void hideAddEditDialog() {
+        clearFields();
+        mAddEditLinearLayout.setVisibility(View.GONE);
+        mAddItemFab.setVisibility(View.VISIBLE);
+    }
+
+    @Override
     public void onResume() {
         super.onResume();
 
         IntentFilter filter = new IntentFilter();
         filter.addAction(FetchItemWebIntentService.ACTION_ITEMS_FETCHED);
         filter.addAction(DeleteItemWebIntentService.ACTION_ITEM_DELETED);
+        filter.addAction(AddItemWebIntentService.ACTION_ITEM_ADDED);
 
         getContext().registerReceiver(mBroadcastReceiver, filter);
 
         BusProvider.getDatabaseBus().register(this);
         mItemDataSource = new ItemDataSource(getContext());
         mItemDataSource.open();
-
 
         onRefresh();
     }
@@ -172,10 +249,6 @@ public class ItemListFragment extends Fragment implements DrawerFragment, SwipeR
         mItemDataSource.close();
         BusProvider.getDatabaseBus().unregister(this);
         super.onPause();
-    }
-
-    public void onAddItem() {
-
     }
 
     @Subscribe
