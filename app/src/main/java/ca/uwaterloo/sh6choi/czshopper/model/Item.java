@@ -53,16 +53,6 @@ public class Item implements Parcelable {
         mContentDesc = CONTENT_DESC_DEFAULT;
     }
 
-    public Item(int id, String category, String name, int userId, String createdAt, String updatedAt) {
-        mId = id;
-        mCategory = category;
-        mName = name;
-        mUserId = userId;
-        //TODO: PARSE CREATED AT, UPDATED AT
-
-        mContentDesc = CONTENT_DESC_DEFAULT;
-    }
-
     protected Item(Parcel in) {
         mContentDesc = in.readInt();
 

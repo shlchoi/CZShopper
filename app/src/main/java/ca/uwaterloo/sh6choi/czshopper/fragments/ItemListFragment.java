@@ -14,33 +14,32 @@ import android.support.v7.widget.helper.ItemTouchHelper;
 import android.support.design.widget.FloatingActionButton;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 
-import com.squareup.otto.Subscribe;
-
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 import ca.uwaterloo.sh6choi.czshopper.R;
 import ca.uwaterloo.sh6choi.czshopper.activities.MainActivity;
 import ca.uwaterloo.sh6choi.czshopper.adapters.ItemAdapter;
-import ca.uwaterloo.sh6choi.czshopper.bus.BusProvider;
 import ca.uwaterloo.sh6choi.czshopper.database.ItemDataSource;
-import ca.uwaterloo.sh6choi.czshopper.events.ItemsFetchedEvent;
 import ca.uwaterloo.sh6choi.czshopper.model.Item;
+import ca.uwaterloo.sh6choi.czshopper.model.ItemSet;
 import ca.uwaterloo.sh6choi.czshopper.services.AddItemWebIntentService;
 import ca.uwaterloo.sh6choi.czshopper.services.DeleteItemWebIntentService;
 import ca.uwaterloo.sh6choi.czshopper.services.FetchItemWebIntentService;
+import ca.uwaterloo.sh6choi.czshopper.services.UpdateItemWebIntentService;
 
 /**
  * Created by Samson on 2015-10-15.
  */
-public class ItemListFragment extends Fragment implements DrawerFragment, SwipeRefreshLayout.OnRefreshListener, View.OnClickListener {
+public class ItemListFragment extends Fragment implements DrawerFragment, SwipeRefreshLayout.OnRefreshListener, View.OnClickListener, ItemDataSource.ItemsPresenter, ItemAdapter.OnItemClickListener {
 
     private static final String TAG = ItemListFragment.class.getCanonicalName();
     public static final String FRAGMENT_TAG = MainActivity.TAG + ".fragment.item_list";
@@ -56,13 +55,22 @@ public class ItemListFragment extends Fragment implements DrawerFragment, SwipeR
     private EditText mAddEditCategoryEditText;
     private Button mAddEditSave;
     private Button mAddEditCancel;
+    private EditMode mEditMode = EditMode.NONE;
+    private Item mEditItem;
 
     private FloatingActionButton mAddItemFab;
 
-    private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
+    private BroadcastReceiver mSuccessReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            mItemDataSource.queryItems();
+            ItemSet.getInstance().update(mItemDataSource, ItemListFragment.this);
+        }
+    };
+
+    private BroadcastReceiver mErrorReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            ItemSet.getInstance().update(mItemDataSource, ItemListFragment.this);
         }
     };
 
@@ -93,7 +101,7 @@ public class ItemListFragment extends Fragment implements DrawerFragment, SwipeR
         mItemListRecyclerView = (RecyclerView) view.findViewById(R.id.item_recycler_view);
         mItemListRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
-        mItemAdapter = new ItemAdapter(new ArrayList<Item>());
+        mItemAdapter = new ItemAdapter();
         mItemListRecyclerView.setAdapter(mItemAdapter);
 
         ItemTouchHelper.Callback listItemTouchHelper = new ItemTouchHelper.Callback() {
@@ -104,27 +112,28 @@ public class ItemListFragment extends Fragment implements DrawerFragment, SwipeR
 
             @Override
             public int getMovementFlags(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder) {
-                return makeFlag(ItemTouchHelper.ACTION_STATE_SWIPE, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT);
+                if (viewHolder.itemView.getTag() instanceof Item) {
+                    return makeFlag(ItemTouchHelper.ACTION_STATE_SWIPE, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT);
+                } else {
+                    return 0;
+                }
             }
 
             @Override
             public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
                 if (direction == ItemTouchHelper.RIGHT || direction == ItemTouchHelper.LEFT) {
-                    Item item = mItemAdapter.getItems().get(viewHolder.getAdapterPosition());
-
-                    mItemAdapter.removeItem(item);
-                    mItemAdapter.notifyItemRemoved(viewHolder.getAdapterPosition());
+                    Item item = (Item) viewHolder.itemView.getTag();
 
                     Intent intent = new Intent(getActivity(), DeleteItemWebIntentService.class);
-                    intent.putExtra(DeleteItemWebIntentService.EXTRA_ITEM_ID, item.getId());
+                    intent.putExtra(DeleteItemWebIntentService.EXTRA_ITEM, item);
                     getContext().startService(intent);
-
                }
             }
         };
 
         ItemTouchHelper itemTouchHelper = new ItemTouchHelper(listItemTouchHelper);
         itemTouchHelper.attachToRecyclerView(mItemListRecyclerView);
+        mItemAdapter.setOnItemClickListener(this);
 
         mAddEditLinearLayout = (LinearLayout) view.findViewById(R.id.add_edit_layout);
 
@@ -136,17 +145,12 @@ public class ItemListFragment extends Fragment implements DrawerFragment, SwipeR
 
         mAddItemFab = (FloatingActionButton) view.findViewById(R.id.add_item_fab);
 
+        mAddEditLinearLayout.setOnClickListener(this);
         mAddEditSave.setOnClickListener(this);
         mAddEditCancel.setOnClickListener(this);
         mAddItemFab.setOnClickListener(this);
 
-        mSwipeRefreshLayout.setRefreshing(true);
-    }
-
-    @Override
-    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        super.onCreateOptionsMenu(menu, inflater);
-        inflater.inflate(R.menu.menu_item_list, menu);
+        onRefresh();
     }
 
     @Override
@@ -155,6 +159,21 @@ public class ItemListFragment extends Fragment implements DrawerFragment, SwipeR
 
         Intent intent = new Intent(getContext(), FetchItemWebIntentService.class);
         getContext().startService(intent);
+    }
+
+    @Override
+    public void onItemClick(View view) {
+        mEditMode = EditMode.UPDATE;
+        mEditItem = (Item) view.getTag();
+
+        mAddEditNameEditText.setText(mEditItem.getName());
+        mAddEditCategoryEditText.setText(mEditItem.getCategory());
+        showAddEditDialog();
+    }
+
+    @Override
+    public void onCategoryClick(View view) {
+
     }
 
     @Override
@@ -167,12 +186,14 @@ public class ItemListFragment extends Fragment implements DrawerFragment, SwipeR
                 onAddEditSaveClicked();
                 break;
             case R.id.add_edit_cancel_button:
+            case R.id.add_edit_layout:
                 onAddEditCancelClicked();
                 break;
         }
     }
 
     private void onAddItemFabClicked() {
+        mEditMode = EditMode.ADD;
         showAddEditDialog();
     }
 
@@ -192,11 +213,21 @@ public class ItemListFragment extends Fragment implements DrawerFragment, SwipeR
         String name = mAddEditNameEditText.getText().toString();
         String category = mAddEditCategoryEditText.getText().toString();
 
-        Item newItem = new Item(category, name);
 
-        Intent intent = new Intent(getContext(), AddItemWebIntentService.class);
-        intent.putExtra(AddItemWebIntentService.EXTRA_ITEM, newItem);
-        getContext().startService(intent);
+        if (mEditMode == EditMode.ADD) {
+            Item newItem = new Item(category, name);
+            Intent intent = new Intent(getContext(), AddItemWebIntentService.class);
+            intent.putExtra(AddItemWebIntentService.EXTRA_ITEM, newItem);
+            getContext().startService(intent);
+        } else {
+            if (mEditItem != null) {
+                mEditItem.setName(name);
+                mEditItem.setCategory(category);
+                Intent intent = new Intent(getContext(), UpdateItemWebIntentService.class);
+                intent.putExtra(UpdateItemWebIntentService.EXTRA_ITEM, mEditItem);
+                getContext().startService(intent);
+            }
+        }
 
         //TODO: SHOW MOCK
 
@@ -213,6 +244,7 @@ public class ItemListFragment extends Fragment implements DrawerFragment, SwipeR
 
         mAddEditNameEditText.setError(null);
         mAddEditCategoryEditText.setError(null);
+        mEditItem = null;
     }
 
     private void showAddEditDialog() {
@@ -224,22 +256,32 @@ public class ItemListFragment extends Fragment implements DrawerFragment, SwipeR
         clearFields();
         mAddEditLinearLayout.setVisibility(View.GONE);
         mAddItemFab.setVisibility(View.VISIBLE);
+        hideSoftInputKeyboard();
+        mEditMode = EditMode.NONE;
     }
 
     @Override
     public void onResume() {
         super.onResume();
 
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(FetchItemWebIntentService.ACTION_ITEMS_FETCHED);
-        filter.addAction(DeleteItemWebIntentService.ACTION_ITEM_DELETED);
-        filter.addAction(AddItemWebIntentService.ACTION_ITEM_ADDED);
+        IntentFilter successFilter = new IntentFilter();
+        successFilter.addAction(FetchItemWebIntentService.ACTION_ITEMS_FETCHED);
+        successFilter.addAction(AddItemWebIntentService.ACTION_ITEM_ADDED);
+        successFilter.addAction(UpdateItemWebIntentService.ACTION_ITEM_UPDATED);
+        successFilter.addAction(DeleteItemWebIntentService.ACTION_ITEM_DELETED);
 
-        getContext().registerReceiver(mBroadcastReceiver, filter);
+        IntentFilter errorFilter = new IntentFilter();
+        errorFilter.addAction(FetchItemWebIntentService.ACTION_ERROR);
+        errorFilter.addAction(AddItemWebIntentService.ACTION_ERROR);
+        errorFilter.addAction(UpdateItemWebIntentService.ACTION_ERROR);
+        errorFilter.addAction(DeleteItemWebIntentService.ACTION_ERROR);
 
-        BusProvider.getDatabaseBus().register(this);
+        getContext().registerReceiver(mSuccessReceiver, successFilter);
+        getContext().registerReceiver(mErrorReceiver, errorFilter);
+
         mItemDataSource = new ItemDataSource(getContext());
         mItemDataSource.open();
+        mItemDataSource.queryItems(this);
 
         onRefresh();
     }
@@ -247,14 +289,15 @@ public class ItemListFragment extends Fragment implements DrawerFragment, SwipeR
     @Override
     public void onPause() {
         mItemDataSource.close();
-        BusProvider.getDatabaseBus().unregister(this);
+        getContext().unregisterReceiver(mSuccessReceiver);
+
         super.onPause();
     }
 
-    @Subscribe
-    public void onDatabaseQueried(ItemsFetchedEvent event) {
-        mItemAdapter.setItems(event.getItems());
+    @Override
+    public void onItemsFetched() {
         mSwipeRefreshLayout.setRefreshing(false);
+        mItemAdapter.notifyDataSetChanged();
     }
 
     @Override
@@ -280,5 +323,15 @@ public class ItemListFragment extends Fragment implements DrawerFragment, SwipeR
     @Override
     public boolean onBackPressed() {
         return false;
+    }
+
+    private void hideSoftInputKeyboard() {
+        ((InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(getActivity().getCurrentFocus().getWindowToken(), 0);
+    }
+
+    private enum EditMode {
+        ADD,
+        UPDATE,
+        NONE
     }
 }

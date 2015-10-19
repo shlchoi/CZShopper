@@ -22,6 +22,7 @@ public class FetchItemWebIntentService extends WebIntentService {
     private static final String TAG = FetchItemWebIntentService.class.getCanonicalName();
 
     public static final String ACTION_ITEMS_FETCHED = TAG + ".action.items_fetched";
+    public static final String ACTION_ERROR = TAG + ".action.error";
 
 
     public FetchItemWebIntentService() {
@@ -50,6 +51,7 @@ public class FetchItemWebIntentService extends WebIntentService {
         Item[] items = new Gson().fromJson(jsonArray, Item[].class);
         ItemDataSource dataSource = new ItemDataSource(this);
         dataSource.open();
+        dataSource.emptyItems();
         for (Item item : items) {
             dataSource.addItem(item);
         }
@@ -61,6 +63,6 @@ public class FetchItemWebIntentService extends WebIntentService {
 
     @Override
     public void onError(Exception e) {
-
+        sendBroadcast(new Intent(ACTION_ERROR));
     }
 }

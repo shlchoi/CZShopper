@@ -7,6 +7,8 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 import ca.uwaterloo.sh6choi.czshopper.R;
+import ca.uwaterloo.sh6choi.czshopper.database.ItemDataSource;
+import ca.uwaterloo.sh6choi.czshopper.model.Item;
 
 /**
  * Created by Samson on 2015-10-13.
@@ -14,10 +16,11 @@ import ca.uwaterloo.sh6choi.czshopper.R;
 public class DeleteItemWebIntentService extends WebIntentService {
     private static final String TAG = DeleteItemWebIntentService.class.getCanonicalName();
 
-    public static final String EXTRA_ITEM_ID = TAG + ".extras.item_id";
+    public static final String EXTRA_ITEM = TAG + ".extras.item_id";
     public static final String ACTION_ITEM_DELETED = TAG + ".action.item_deleted";
+    public static final String ACTION_ERROR = TAG + ".action.error";
 
-    private int mItemId = -1;
+    private Item mItem;
 
     public DeleteItemWebIntentService() {
         super("DeleteItemWebIntentService");
@@ -25,12 +28,12 @@ public class DeleteItemWebIntentService extends WebIntentService {
 
     @Override
     protected URL getUrl() throws MalformedURLException {
-        return new URL(getString(R.string.url) + String.format(getString(R.string.endpoint_update_item), mItemId));
+        return new URL(getString(R.string.url) + String.format(getString(R.string.endpoint_update_item), mItem.getId()));
     }
 
     @Override
     protected void onHandleIntent(Intent intent) {
-        mItemId = intent.getIntExtra(EXTRA_ITEM_ID, -1);
+        mItem = intent.getParcelableExtra(EXTRA_ITEM);
         super.onHandleIntent(intent);
     }
 
@@ -47,11 +50,15 @@ public class DeleteItemWebIntentService extends WebIntentService {
     @Override
     public void onResponse(String response) {
         Log.d(TAG, "Response retrieved");
+        ItemDataSource dataSource = new ItemDataSource(this);
+        dataSource.open();
+        dataSource.deleteItem(mItem);
+        dataSource.close();
         sendBroadcast(new Intent(ACTION_ITEM_DELETED));
     }
 
     @Override
     public void onError(Exception e) {
-
+        sendBroadcast(new Intent(ACTION_ERROR));
     }
 }

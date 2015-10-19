@@ -22,6 +22,7 @@ public class UpdateItemWebIntentService extends WebIntentService {
 
     public static final String EXTRA_ITEM = TAG  + ".extras.item";
     public static final String ACTION_ITEM_UPDATED = TAG + ".action.item_updated";
+    public static final String ACTION_ERROR = TAG + ".action.error";
 
     private Item mItem;
 
@@ -72,6 +73,6 @@ public class UpdateItemWebIntentService extends WebIntentService {
 
     @Override
     public void onError(Exception e) {
-
+        sendBroadcast(new Intent(ACTION_ERROR));
     }
 }
