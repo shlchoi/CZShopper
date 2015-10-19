@@ -14,6 +14,9 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.UnknownHostException;
+
+import ca.uwaterloo.sh6choi.czshopper.utils.NetworkUtils;
 
 /**
  * Created by Samson on 2015-10-13.
@@ -53,6 +56,11 @@ public abstract class WebIntentService extends IntentService {
 
     @Override
     protected void onHandleIntent(Intent intent) {
+
+        if (!NetworkUtils.isConnected(this)) {
+            onError(new UnknownHostException("Could not connect to the Internet"));
+        }
+
         HttpURLConnection urlConnection = null;
         try {
             urlConnection = (HttpURLConnection) getUrl().openConnection();

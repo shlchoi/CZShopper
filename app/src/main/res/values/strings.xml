@@ -12,4 +12,6 @@
 
     <string name="dialog_add_edit_cancel">Cancel</string>
     <string name="dialog_add_edit_save">Save</string>
+
+    <string name="error_could_not_connect">We couldn\'t connect to the Internet at this time.\nPlease check your connection or try again later.</string>
 </resources>

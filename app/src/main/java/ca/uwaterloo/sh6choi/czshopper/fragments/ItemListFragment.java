@@ -4,14 +4,16 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.helper.ItemTouchHelper;
-import android.support.design.widget.FloatingActionButton;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -20,10 +22,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import android.widget.TextView;
 
 import ca.uwaterloo.sh6choi.czshopper.R;
 import ca.uwaterloo.sh6choi.czshopper.activities.MainActivity;
@@ -58,6 +57,9 @@ public class ItemListFragment extends Fragment implements DrawerFragment, SwipeR
     private EditMode mEditMode = EditMode.NONE;
     private Item mEditItem;
 
+    private LinearLayout mErrorLinearLayout;
+    private TextView mErrorTextView;
+
     private FloatingActionButton mAddItemFab;
 
     private BroadcastReceiver mSuccessReceiver = new BroadcastReceiver() {
@@ -71,6 +73,23 @@ public class ItemListFragment extends Fragment implements DrawerFragment, SwipeR
         @Override
         public void onReceive(Context context, Intent intent) {
             ItemSet.getInstance().update(mItemDataSource, ItemListFragment.this);
+        }
+    };
+
+    private BroadcastReceiver mConnectivityReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            ConnectivityManager cm = (ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE);
+
+            NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+            boolean isConnected = activeNetwork != null && activeNetwork.isConnectedOrConnecting();
+
+            if (!isConnected) {
+                mErrorTextView.setText(R.string.error_could_not_connect);
+                mErrorLinearLayout.setVisibility(View.VISIBLE);
+            } else {
+                mErrorLinearLayout.setVisibility(View.GONE);
+            }
         }
     };
 
@@ -149,6 +168,9 @@ public class ItemListFragment extends Fragment implements DrawerFragment, SwipeR
         mAddEditSave.setOnClickListener(this);
         mAddEditCancel.setOnClickListener(this);
         mAddItemFab.setOnClickListener(this);
+
+        mErrorLinearLayout = (LinearLayout) view.findViewById(R.id.error_message_layout);
+        mErrorTextView = (TextView) view.findViewById(R.id.error_text_view);
 
         onRefresh();
     }
@@ -229,8 +251,6 @@ public class ItemListFragment extends Fragment implements DrawerFragment, SwipeR
             }
         }
 
-        //TODO: SHOW MOCK
-
         hideAddEditDialog();
     }
 
@@ -276,8 +296,12 @@ public class ItemListFragment extends Fragment implements DrawerFragment, SwipeR
         errorFilter.addAction(UpdateItemWebIntentService.ACTION_ERROR);
         errorFilter.addAction(DeleteItemWebIntentService.ACTION_ERROR);
 
+        IntentFilter connectivityFilter = new IntentFilter();
+        connectivityFilter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
+
         getContext().registerReceiver(mSuccessReceiver, successFilter);
         getContext().registerReceiver(mErrorReceiver, errorFilter);
+        getContext().registerReceiver(mConnectivityReceiver, connectivityFilter);
 
         mItemDataSource = new ItemDataSource(getContext());
         mItemDataSource.open();
@@ -290,6 +314,8 @@ public class ItemListFragment extends Fragment implements DrawerFragment, SwipeR
     public void onPause() {
         mItemDataSource.close();
         getContext().unregisterReceiver(mSuccessReceiver);
+        getContext().unregisterReceiver(mErrorReceiver);
+        getContext().unregisterReceiver(mConnectivityReceiver);
 
         super.onPause();
     }
