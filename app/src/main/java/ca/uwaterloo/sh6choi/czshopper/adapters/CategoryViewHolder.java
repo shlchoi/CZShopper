@@ -4,6 +4,8 @@ import android.support.v7.widget.RecyclerView;
 import android.view.View;
 import android.widget.TextView;
 
+import java.lang.ref.WeakReference;
+
 import ca.uwaterloo.sh6choi.czshopper.R;
 
 /**
@@ -12,7 +14,7 @@ import ca.uwaterloo.sh6choi.czshopper.R;
 public class CategoryViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
     private TextView mTextView;
 
-    private OnCategoryClickListener mOnCategoryClickListener;
+    private WeakReference<OnCategoryClickListener> mOnCategoryClickListener;
 
     public CategoryViewHolder(View v) {
         super(v);
@@ -25,14 +27,14 @@ public class CategoryViewHolder extends RecyclerView.ViewHolder implements View.
     }
 
     public void setOnCategoryClickListener(OnCategoryClickListener onItemClickListener) {
-        mOnCategoryClickListener = onItemClickListener;
+        mOnCategoryClickListener = new WeakReference<>(onItemClickListener);
     }
 
     @Override
     public void onClick(View v) {
         if (v.getId() == R.id.category_layout) {
-            if (mOnCategoryClickListener != null) {
-                mOnCategoryClickListener.onCategoryClick(v);
+            if (mOnCategoryClickListener!= null && mOnCategoryClickListener.get() != null) {
+                mOnCategoryClickListener.get().onCategoryClick(v);
             }
         }
     }
