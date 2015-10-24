@@ -60,7 +60,7 @@ public class ItemDataSource {
         values.put(CZShopperSQLiteOpenHelper.COLUMN_USER_ID, item.getUserId());
         values.put(CZShopperSQLiteOpenHelper.COLUMN_CREATED_AT, item.getCreatedAt().getTime());
         values.put(CZShopperSQLiteOpenHelper.COLUMN_UPDATED_AT, item.getUpdatedAt().getTime());
-        mDatabase.updateWithOnConflict(CZShopperSQLiteOpenHelper.TABLE_ITEMS, values, CZShopperSQLiteOpenHelper.COLUMN_ID + " = " + item.getId(), null, SQLiteDatabase.CREATE_IF_NECESSARY);
+        mDatabase.insertWithOnConflict(CZShopperSQLiteOpenHelper.TABLE_ITEMS, null, values, SQLiteDatabase.CONFLICT_REPLACE);
     }
 
     public void deleteItem(Item item) {
